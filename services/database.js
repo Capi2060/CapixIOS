@@ -1,50 +1,43 @@
 import * as SQLite from 'expo-sqlite';
 
-const db = SQLite.openDatabase('capix.db');
+const db = SQLite.openDatabaseSync('capix.db');
 
-export const initDB = () => {
-  return new Promise((resolve, reject) => {
-    db.transaction(tx => {
-      // Expenses table
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, category TEXT);'
-      );
-      // Tasks table
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, isCompleted INTEGER, priority INTEGER);'
-      );
-      // Customers table
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, notes TEXT);'
-      );
-    }, (err) => reject(err), () => resolve());
-  });
+export const initDB = async () => {
+  try {
+    // Inicialización de tablas con el nuevo API execSync
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL, date TEXT, category TEXT);
+      CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, isCompleted INTEGER, priority INTEGER);
+      CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, notes TEXT);
+    `);
+    console.log('Base de datos inicializada correctamente');
+  } catch (error) {
+    console.error('Error al inicializar la base de datos:', error);
+    throw error;
+  }
 };
 
 export const insertExpense = (title, amount, date, category) => {
-  return new Promise((resolve, reject) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'INSERT INTO expenses (title, amount, date, category) VALUES (?, ?, ?, ?);',
-        [title, amount, date, category],
-        (_, result) => resolve(result),
-        (_, err) => reject(err)
-      );
-    });
-  });
+  try {
+    const result = db.runSync(
+      'INSERT INTO expenses (title, amount, date, category) VALUES (?, ?, ?, ?);',
+      [title, amount, date, category]
+    );
+    return result;
+  } catch (error) {
+    console.error('Error al insertar gasto:', error);
+    throw error;
+  }
 };
 
 export const getExpenses = () => {
-  return new Promise((resolve, reject) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'SELECT * FROM expenses ORDER BY date DESC;',
-        [],
-        (_, { rows }) => resolve(rows._array),
-        (_, err) => reject(err)
-      );
-    });
-  });
+  try {
+    const allRows = db.getAllSync('SELECT * FROM expenses ORDER BY date DESC;');
+    return allRows;
+  } catch (error) {
+    console.error('Error al obtener gastos:', error);
+    return [];
+  }
 };
 
 // ... similar helpers for tasks and customers can be added here
